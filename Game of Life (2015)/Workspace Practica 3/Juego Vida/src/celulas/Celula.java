@@ -1,0 +1,41 @@
+package celulas;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Scanner;
+
+import juegoVida.Casilla;
+import juegoVida.Superficie;
+import excepciones.FormatoNumericoIncorrecto;
+
+public interface Celula {	
+	
+	/**
+     * Calcula la casilla de destino.
+     * @param fil Coordenada x de donde se encuentra la celula
+     * @param col Coordenada y de donde se encuentra la celula
+     * @param superficie
+     * @return Devuelve una casilla de destino a la celula
+     */
+	//public Casilla ejecutaMovimiento(int f, int c, Superficie superficie);	
+	
+	/**
+	 * GUARDA los atributos de la celula
+	 * @param fw
+	 * @throws IOException
+	 */
+	public void guardar(FileWriter fw) throws IOException;
+	
+	/**
+	 * carga a la celula sus atributos
+	 * @param fw
+	 * @throws IOException
+	 */
+	public void cargar(Scanner sc) throws FormatoNumericoIncorrecto;
+	
+	public boolean esComestible();
+	
+	public  Casilla ejecutaMovimiento (int f, int c, Superficie superficie);
+
+	
+}

@@ -1,0 +1,225 @@
+package mundos;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Scanner;
+
+import juegoVida.Casilla;
+import juegoVida.GuiaEjecucion;
+import juegoVida.Superficie;
+import excepciones.CelulaIncorrecta;
+import excepciones.ErrorLecturaFichero;
+import excepciones.FormatoNumericoIncorrecto;
+import excepciones.IndicesFueraDeRango;
+import excepciones.PalabraIncorrecta;
+import excepciones.PosicionOcupada;
+import excepciones.PosicionVacia;
+
+public abstract class Mundo {
+	protected Superficie superficie;
+    protected int nFilas;
+	protected int nColumnas;
+	
+	public Mundo() {
+		this.nFilas = 0;
+		this.nColumnas = 0;
+		superficie = null;
+	}
+	
+	public Mundo(int f, int c) {
+		this.nFilas = f;
+		this.nColumnas = c;
+	    superficie = new Superficie(nFilas, nColumnas);	   
+	}	
+
+	/**
+	 * inicializa el mundo, con su superficie y sus corresponientes celulas
+	 */
+	public abstract void inicializaMundo();
+	
+	/**
+	 * metodod que se encarga de la evolucion de las celulas
+	 */
+	public void evoluciona() {
+		boolean muerePasos = false;                     
+        boolean muereRep = false;
+      //creamos una matriz boleana que recorre la superficie, para evitar mover una celula dos veces
+		boolean haMovido[][] = new boolean [nFilas][nColumnas];
+		//inicializamos la matriz
+    	for (int i = 0; i < nFilas; i++) {
+            for (int j = 0; j < nColumnas; j++) {
+                haMovido[i][j] = false;
+            }
+        }
+    	for (int i = 0; i < nFilas; i++) {
+            for (int j = 0; j < nColumnas; j++) {
+                if (!haMovido[i][j] && !superficie.esVacia(i, j)) { //si no hemos movido dicha celula todavia, y mientras la superficie no estï¿½ vacia
+                	Casilla destino = superficie.ejecutaMovimiento(i, j); //recibimos la posicion a la que dicha celula debe moverse x,y o null en caso contrario
+                	if (destino != null) {
+                		
+                		if(!superficie.esComestible(i, j)){ //compruebo si es una celula compleja
+                			//incremento numero de celulas comidas(en supuesto caso), si supera el maximo, explota y muere
+                			if(superficie.compruebaMaxComidas(i, j)){
+                				superficie.killCell(i, j);	//Muere la celula por llevar X celulas comidas
+                				superficie.killCell(destino.getFila(), destino.getColumna()); //Muere la celulaSimple donde la celulaCompleja se ha llenado
+                				GuiaEjecucion.arrayEvoluciona.add("Celula Comleja en (" + i + "," + j + ") se mueve a (" + destino.getFila() + "," + destino.getColumna() + ") -- COME--");
+                				GuiaEjecucion.arrayEvoluciona.add("Explota la Celula Compleja en (" + destino.getFila() + "," + destino.getColumna() + ")");                				
+                			}
+                			else{ //En caso de no explotar, se ocupa la celda a la que se va a mover                				
+                				if(superficie.esVacia(destino.getFila(), destino.getColumna())){   //Si la celulaCompleja ocupa una casilla vacia... NO COME              		
+                					GuiaEjecucion.arrayEvoluciona.add("Celula Compleja en (" + i + "," + j + ") se mueve a (" + destino.getFila() + "," + destino.getColumna() + ") -- NO COME--");
+                				}
+                				else{ //Si la celulaCompleja ocupa una casilla donde se encuentra una celulaSimple...  COME
+                					GuiaEjecucion.arrayEvoluciona.add("Celula Compleja en (" + i + "," + j + ") se mueve a (" + destino.getFila() + "," + destino.getColumna() + ") -- COME--");
+                				}
+                				haMovido[destino.getFila()][destino.getColumna()] = true;
+                				superficie.seMueve(i, j, destino.getFila(), destino.getColumna()); //se mueve de i,j hasta la posicion de destino
+                			}
+                			
+                		}
+                		else{ //En caso de tratarse de una celula simple  
+                			//incrementa el numero de pasosReproducion, y comprueba si ha alcanzado el maximo par apoder reproducirse
+                			if(superficie.incrementaCompruebaPasosReproduccion(i, j)){
+                				superficie.seReproduce(i, j, destino.getFila(), destino.getColumna()); //en ese caso, se reproduce
+                				haMovido[i][j] = true;
+                				haMovido[destino.getFila()][destino.getColumna()] = true;
+                				GuiaEjecucion.arrayEvoluciona.add("Nace nueva Celula en (" + destino.getFila() + "," + destino.getColumna() + ") cuyo padre ha sido (" + i + "," + j + ")");
+                			}
+                			else{
+                				superficie.seMueve(i, j, destino.getFila(), destino.getColumna()); //En dicho caso solo se desplaza
+                				haMovido[destino.getFila()][destino.getColumna()] = true;
+                				GuiaEjecucion.arrayEvoluciona.add("Movimiento de  (" + i + "," + j + ") a (" + destino.getFila() + "," + destino.getColumna() + ")");                				
+                			}
+                			
+                		}	
+            		}else
+            			if(superficie.esComestible(i, j)){ //compruebo que sea una celulaSimple
+                			//incremento noMovimineto++, y a su vez compruebo que se no se haya excedido de MAX_PASOS_SIN_MOVER
+                			if(superficie.incrementaCompruebaNoMovimiento(i, j)){ //La celulaSimple puede morirse por haber superado el max_pasos_reproduccion
+                				 muerePasos = true;
+                				 GuiaEjecucion.arrayEvoluciona.add("Muere la Celula en (" + i + "," + j + ") por no poder moverse ");
+                			}
+                			if(superficie.incrementaCompruebaPasosReproduccion(i, j)){//La celulaSimple puede morirse por haber superado el max_noMovimiento
+                				muereRep = true;
+                				 GuiaEjecucion.arrayEvoluciona.add("Muere la Celula en (" + i + "," + j + ") por no poder reproducirse ");
+                			}
+                			if(muerePasos || muereRep){
+                				superficie.killCell(i, j);	//En caso de excederse, se muere la celula
+                			}
+                			else{     
+                				haMovido[i][j] = true; //en caso de no morir, la celda queda ocupada
+                				GuiaEjecucion.arrayEvoluciona.add("No se mueve la Celula (" + i + "," + j + ") por estar rodeada");
+                			}
+                			
+                		}
+            			else{ //en caso de que sea una celCompleja
+            				haMovido[i][j] = true; //se mantiene debido a que no puede comerse otra compleja
+            				GuiaEjecucion.arrayEvoluciona.add("Celula Compleja en (" + i + "," + j + ") no se mueve ya que en la posicion elegida se encuentra una celula compleja");
+            			}                		
+                   }
+            }
+        }
+    	
+    }
+	
+	/**
+	 * Elimina la correspondiente celula en la posicion x, y
+	 * @param x posicion fila
+	 * @param y posicion columna
+	 * @throws IndicesFueraDeRango
+	 * @throws PosicionVacia
+	 */
+	// MÉTODO ELIMINAR
+	public void eliminarCelula(int x, int y) throws IndicesFueraDeRango, PosicionVacia {
+		
+		if(x > nFilas || y > nColumnas){
+			throw new IndicesFueraDeRango("Rango incorrecto Fila: " + x + " Col: "+ y);
+		}
+		else if(superficie.esVacia(x, y)){
+			throw new PosicionVacia("Se solicitó eliminar posición vacía en Fil:" + x + " Col: "+ y);
+		}
+		else{
+			superficie.killCell(x, y);
+		}
+	}
+	
+	/**
+	 * vacía la superficie
+	 */
+	// COMANDO VACIAR	
+	public void vaciarMundo() {
+		superficie = new Superficie(nFilas, nColumnas);
+	}
+	
+	/**
+     * Creación una célula simple, en la posicion x,y
+     * @param x Coordenada x de la célula
+     * @param y Coordenada y de la célula
+	 * @throws PosicionOcupada 
+	 * @throws IndicesFueraDeRango 
+	 * @throws CelulaIncorrecta 
+     */
+	public abstract void crearCelula(int x, int y) throws IndicesFueraDeRango, PosicionOcupada, CelulaIncorrecta;
+	
+	/**
+	 * carga de fichero las dimensiones
+	 * @param sc flujo abierto
+	 * @throws PalabraIncorrecta
+	 * @throws FormatoNumericoIncorrecto
+	 */
+	public void cargar(Scanner sc) throws PalabraIncorrecta, FormatoNumericoIncorrecto {
+		ErrorLecturaFichero.incrementaContLinea();
+		this.nFilas = sc.nextInt();
+		
+		ErrorLecturaFichero.incrementaContLinea();
+		this.nColumnas = sc.nextInt();
+		
+		this.superficie = new Superficie(this.nFilas, this.nColumnas);
+		
+		this.cargarTipoJuego(sc);
+	}
+	
+	/**
+	 * delega en un mundo u otro dependiendo del tipo de partida
+	 * @param sc
+	 * @throws FormatoNumericoIncorrecto
+	 */
+	public abstract void cargarTipoJuego(Scanner sc) throws FormatoNumericoIncorrecto;
+	
+	/**
+	 * guarda una partida en un fichero con nombre fileName
+	 * @param fileName nombre del fichero
+	 * @throws IOException
+	 */
+	public void guardar(String fileName) throws IOException {
+		File file = new File(fileName);
+		FileWriter fw = null;
+		try {
+			fw = new FileWriter(file);
+			this.guardaTipoJuego(fw);
+			this.superficie.guardar(fw);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		finally{
+			try {
+				fw.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	/**
+	 * delega en un mundo u otro para guerdar la informacion acerca del tipo de juego
+	 * @param fw
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 */
+	public abstract void guardaTipoJuego(FileWriter fw) throws FileNotFoundException, IOException;
+
+    @Override    
+    public abstract String toString();
+}

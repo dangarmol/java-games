@@ -1,0 +1,38 @@
+package juegoVida;
+
+import java.util.Scanner;
+
+import comandos.Comando;
+import comandos.ParserComandos;
+
+public class Controlador{
+
+    private Mundo mundo;
+    private Scanner in;
+
+    public Controlador(Mundo mundo, Scanner in) {
+        this.mundo = mundo;
+        this.in = in;
+    }
+
+    /**
+     * Realiza la simulacion, para ello lee por pantalla lo que escribe el usuario y ejecita el programa
+     */
+    public void realizaSimulacion() {
+        do {
+        	System.out.println(mundo.toString());
+        	System.out.println("Elija un comando: "); // solicitud del comando
+            System.out.println("Comando > ");
+            String opcion = in.nextLine();
+            opcion.toUpperCase();
+            String[] words = opcion.split(" ");
+            Comando comando = ParserComandos.parseaComandos(words); //busca el comando comparandolo
+            if (comando != null) {
+            	comando.ejecuta(this.mundo);	//si lo encuentra, lo ejecuta
+            }
+            else System.out.println("Comando incorrecto");
+            GuiaEjecucion.textoAyuda();		//muestra codigos de mensaje que no afecten a evoluciona
+            GuiaEjecucion.pasosDados();     //muestra codigos de mensajes que tengan que ver con los movimientos de las celulas
+        } while (!mundo.esSimulacionTerminada());	//en casod e que el usuario esciba el comando SALIR, se termina la ejecución
+    }
+}

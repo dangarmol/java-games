@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Move 3 elements to &apos;Juego Vida/src/Celulas&apos;&#x0D;&#x0A;- Original project: &apos;Juego Vida&apos;&#x0D;&#x0A;- Destination element: &apos;Juego Vida/src/Celulas&apos;&#x0D;&#x0A;- Original elements:&#x0D;&#x0A;     juegoVida.CelulaSimple.java&#x0D;&#x0A;     juegoVida.Celula.java&#x0D;&#x0A;     juegoVida.CelulaCompleja.java&#x0D;&#x0A;- Update references to refactored element" description="Move compilation units" destination="/src&lt;Celulas" element1="/src&lt;juegoVida{CelulaSimple.java" element2="/src&lt;juegoVida{Celula.java" element3="/src&lt;juegoVida{CelulaCompleja.java" files="0" flags="589830" folders="0" id="org.eclipse.jdt.ui.move" patterns="*" policy="org.eclipse.jdt.ui.moveResources" qualified="false" references="true" stamp="1454250711698" units="3" version="1.0"/>
+</session>

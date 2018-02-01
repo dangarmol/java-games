@@ -1,0 +1,273 @@
+package celulas;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.NoSuchElementException;
+import java.util.Scanner;
+
+import juegoVida.Casilla;
+import juegoVida.GuiaEjecucion;
+import juegoVida.Superficie;
+import excepciones.ErrorLecturaFichero;
+import excepciones.FormatoNumericoIncorrecto;
+
+public class CelulaSimple implements Celula {
+	
+	protected boolean esComestible;
+	
+	private static final int PASOS_REPRODUCCION = 2;
+    private static final int MAX_PASOS_SIN_MOVER = 1;
+    private int noMovimiento;
+    private int pasos;
+    
+	public CelulaSimple(){
+		super();
+		esComestible = true;
+		this.pasos = 0;
+		this.noMovimiento = 0;
+	}	
+	
+	/**
+     * Calcula la casilla de destino.
+     * @param fil Coordenada x de donde se encuentra la celula
+     * @param col Coordenada y de donde se encuentra la celula
+     * @param superficie
+     * @return Devuelve una casilla de destino a la celula
+     */
+	
+	private Casilla obtenerCasilla(int f, int c, Superficie superficie) {
+        int contador = 0;
+        int[] incremFila = {-1, -1, -1, 0, 1, 1, 1, 0};         // creamos los arrays incrementafil y col que contendran los numeros a aÃ±adir a la posicion actual de la celula
+        int[] incremColumna = {-1, 0, 1, 1, 0, 1, 0, -1, -1};   //para poder acceder a las posiciones de alrededor
+        Casilla[] posicionesLibres = new Casilla[8];  //Creacion de un array de casillas de tamaÃ±o 8, las posiciones posibles que puede rodear a una celula
+        
+        for (int w = 0; w < 8; w++) {                   //bucle que se ejecuta las 8 veces, para ir comprobando las posiciones de alrededor
+
+            int nf = f + incremFila[w];
+            int nc = c + incremColumna[w];
+            
+            //comprobamos que que las posiciones de alrededor no esten fuera del rango de la matriz, que esten vacias y no haya habido una celula en esa posicion antes
+            if ((superficie.correctos(nf, nc)) && (superficie.esVacia(nf, nc))){    
+                posicionesLibres[contador]  = new Casilla(nf, nc);  // en caso de cumplirse esas tres condiciones procedemos a ir rellenando nuestro array
+                contador++;
+            }
+        }
+        this.incrementaPasos();
+        if (contador == 0) {  //en caso de que nuestro array de casillas este vacia devolvemos null
+        	this.incrementaNoMovimiento();
+        	return null;
+        } else {        // en caso contrario elegimos aleatoriamente una casilla a devolver
+            int elegido = (int) (Math.random() * contador);
+            return posicionesLibres[elegido];
+        }
+	}
+	
+	
+	public Casilla ejecutaMovimiento(int f, int c, Superficie superficie) {
+		Casilla casilla = obtenerCasilla(f, c, superficie);
+		boolean muere = false;
+		
+		if(casilla != null){			
+			//comprueba si ha alcanzado el maximo para poder reproducirse
+			if(superficie.compruebaPasosReproduccion(f, c)){ //true si se reproduce
+				superficie.seReproduce(f, c, casilla.getFila(), casilla.getColumna()); //en ese caso, se reproduce
+				GuiaEjecucion.arrayEvoluciona.add("Nace nueva Celula en (" + casilla.getFila() + "," + casilla.getColumna() + ") cuyo padre ha sido (" + f + "," + c + ")");
+			}
+			else{ //si no se reproduce
+				superficie.seMueve(f, c, casilla.getFila(), casilla.getColumna()); //En dicho caso solo se desplaza
+				GuiaEjecucion.arrayEvoluciona.add("Movimiento de  (" + f + "," + c + ") a (" + casilla.getFila() + "," + casilla.getColumna() + ")");                				
+			}
+		}
+		else{
+			//incremento noMovimiento++, y a su vez compruebo que se no se haya excedido de MAX_PASOS_SIN_MOVER
+			if(superficie.compruebaNoMovimiento(f, c)){ //La celulaSimple puede morirse por haber superado el max_pasos_reproduccion
+				 muere = true;
+				 GuiaEjecucion.arrayEvoluciona.add("Muere la Celula en (" + f + "," + c + ") por no poder moverse ");
+			}
+			if(superficie.compruebaPasosReproduccion(f, c)){//La celulaSimple puede morirse por haber superado el max_noMovimiento
+				 muere = true;
+				 GuiaEjecucion.arrayEvoluciona.add("Muere la Celula en (" + f + "," + c + ") por no poder reproducirse ");
+			}
+			if(muere){
+				superficie.killCell(f, c);
+			}
+			else{     
+				
+				GuiaEjecucion.arrayEvoluciona.add("No se mueve la Celula (" + f + "," + c + ") por estar rodeada");
+			}
+			muere = false;
+		}
+		return casilla;
+	}
+	
+	
+	
+	
+    /**
+     * Incrementa en una unidad los pasos sin mover de la célula
+     * @return si la célula se ha excedido en turnos sin moverse
+     */
+    public boolean compruebaNoMovimiento(){
+        boolean haMuerto = false;
+        if (getNoMovimiento() > MAX_PASOS_SIN_MOVER) {
+        	haMuerto = true;
+        }
+        return haMuerto;
+    }
+    
+    /**
+     * Incrementa en una unidad los pasos movidos de la célula
+     * @return si la célula se ha excedido en turnos para poder reproducirse
+     */
+    public boolean compruebaPasosReproduccion(){
+        boolean reproduce = false;
+        if (getPasos() > PASOS_REPRODUCCION) {
+        	reproduce = true;
+        }
+        return reproduce;
+    }
+
+    
+    /**
+     * Incrementa en una unidad los pasos de reproducciÃ³n de la cÃ©lula
+     */
+    public void incrementaPasos() {
+        this.pasos++;
+    }
+    
+    public void incrementaNoMovimiento(){
+    	this.noMovimiento++;
+    }
+    
+    /**
+     * Devuelve los pasos sin moverse de una cÃ©lula
+     * @return Pasos sin moverse
+     */
+    public int getNoMovimiento() {
+        return this.noMovimiento;
+    }
+    
+    /**
+     * Devuelve los pasos dados por una cÃ©lula para reproducirse
+     * @return Pasos dados para reproducciÃ³n
+     */
+    public int getPasos() {
+        return this.pasos;
+    }
+    
+	 /**
+	  * Devuelve el valor de esComestible
+	  */
+	@Override
+	public boolean esComestible() {
+		return esComestible;
+	}
+    
+    /**
+     * Devuelve el String de cada CÃ©lula
+     */
+    @Override
+    public String toString() {
+    	//return getPasos()+"-"+getNoMovimiento();
+    	return " x ";
+    }
+
+	@Override
+	public int getComidas() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	
+	/**
+	 * GUARDA los atributos de la celula
+	 * @param fw
+	 * @throws IOException
+	 */
+	@Override
+	public void guardar(FileWriter fw) throws IOException{
+		fw.write("simple " + pasos + " " + noMovimiento + System.getProperty("line.separator"));		
+	}
+
+	/**
+	 * carga a la celula sus atributos
+	 * @param fw
+	 * @throws IOException
+	 */
+	@Override
+	public void cargar(Scanner sc) throws FormatoNumericoIncorrecto {
+		try {
+			this.pasos = sc.nextInt();				// cargamos los pasos dados
+			this.noMovimiento = sc.nextInt();		// cargamos los noMovimientos 
+			}
+			catch (NoSuchElementException  e){
+				sc.close();
+				throw new FormatoNumericoIncorrecto("EXCEPCION: Se esperaba un número" + System.getProperty("line.separator")+ ErrorLecturaFichero.errorLectura());
+			
+		}
+		
+	}
+
+	@Override
+	public boolean compruebaMaxComidos() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	 /**
+     * Cuando se llega a esta funciï¿½n, ya estï¿½ comprobado que hay sitio para moverse y se le pasa por parï¿½metro, esta funciï¿½n hace que la cï¿½lula se reproduzca
+     ** @param i Coordenada x de la cï¿½lula madre, que pasa a ser la coordenada de la cï¿½lula hija
+     * @param j Coordenada y de la cï¿½lula madre, que pasa a ser la coordenada de la cï¿½lula hija
+     * @param auxi Nueva coordenada x de la cï¿½lula madre una vez se ha reproducido
+     * @param auxj Nueva coordenada y de la cï¿½lula madre una vez se ha reproducido     
+     */
+    public void seReproduce(int i, int j, int auxi, int auxj) {
+        this.killCell(i, j);
+        this.nuevaCelula(i, j, new CelulaSimple());
+        this.nuevaCelula(auxi, auxj, new CelulaSimple());
+    }
+    
+    /**
+     * Comprueba si ha llegado al maximo
+     * @param i Coordenada x
+     * @param j Coordenada y
+     * @return Devuelve true si se ha excedido, false en caso contrario
+     */
+    public boolean compruebaPasosReproduccion(int i, int j){
+    	return celulas[i][j].compruebaPasosReproduccion();
+    }
+    
+
+    /**
+     * Incrementa los pasos de reproduccion de una celSimple y compueba si ha llegado al maximo
+     * @param i Coordenada x
+     * @param j Coordenada y
+     * @return Devuelve true si se ha excedido, false en caso contrario
+     */
+    public boolean compruebaNoMovimiento(int i, int j) {
+    	return celulas[i][j].compruebaNoMovimiento();
+    }
+    
+    /**
+     * pasos dados por la celula
+     * @param i
+     * @param j
+     * @return
+     */
+
+	public int getPasos(int i, int j) {
+		return celulas[i][j].getPasos();
+	}
+	
+	/**
+	 * pasos de noMovimineto de la celula
+	 * @param i
+	 * @param j
+	 * @return
+	 */
+
+	public int getNoMovimiento(int i, int j) {
+		return celulas[i][j].getNoMovimiento();
+	}
+	
+}

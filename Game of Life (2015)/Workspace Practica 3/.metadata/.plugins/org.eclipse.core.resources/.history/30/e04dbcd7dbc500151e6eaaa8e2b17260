@@ -1,0 +1,168 @@
+package mundos;
+
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.NoSuchElementException;
+import java.util.Scanner;
+
+import celulas.CelulaSimple;
+import excepciones.CelulaIncorrecta;
+import excepciones.ErrorLecturaFichero;
+import excepciones.ErrorLecturaTipoCelula;
+import excepciones.FormatoNumericoIncorrecto;
+import excepciones.IndicesFueraDeRango;
+import excepciones.PosicionOcupada;
+
+public class MundoSimple extends Mundo {
+	protected int nCelSimples; //nÃºmero de cÃ©lulas iniciales	
+	/**
+	 * CONSTRUCTORA
+	 * @param f dimension fila
+	 * @param c	dimension columna
+	 * @param s numero de celulas simples
+	 */
+	public MundoSimple(int f, int c, int s) {
+		super(f,c);
+		this.nCelSimples = s;
+		inicializaMundo();
+	}
+	
+	/**
+	 * CONSTRUCTORA
+	 * @param f numero de filas
+	 * @param c numero de columnas
+	 */
+	public MundoSimple(int f, int c){
+		super(f,c);
+	}
+	public MundoSimple(){
+		super();
+	}
+	
+	/**
+     * Método que ejecuta el comando INICIAR,
+     * creando una nueva supericie vacia, y creando X celulasSimples y X celulasComplejas en posiciones aleatorias
+     */
+	public void inicializaMundo() {
+		vaciarMundo();		//crea nueva superficie vacia
+        int fil;
+        int col;
+        int celulasColocadas = 0;
+        while (celulasColocadas < nCelSimples) { //coloca celulas simples enposiciones aleatorias
+            fil = (int) (Math.random() * nFilas);
+            col = (int) (Math.random() * nColumnas);
+
+            if (this.superficie.esVacia(fil, col)) {
+                this.superficie.nuevaCelula(fil, col, new CelulaSimple());
+                celulasColocadas++;
+            }
+        }
+	}	
+	
+	
+	
+	/**
+     * Dados unas posiciones nf y nc de una celula, se encarga de ver si dicha coordenada se encuentra acotada dentro de la superficie
+     * @param nf Coordenada x
+     * @param nc Coordenada y
+     * @return Devuelve un booleano true en caso de que dicha posicion este acotada, false si esta fuera de rango
+     */
+    public boolean correctos(int nf, int nc) {
+        boolean ok = true;
+        if (nf < 0 || nf >= nFilas || nc < 0 || nc >= nColumnas) {
+            ok = false;
+        }
+        return ok;
+    }
+    
+    /**
+     * Inicia la matriz de booleanos diciendo si una célula puede mover, está vacía, ya ha movido etc...
+     * @param puedeMover es la matriz
+     */
+    public void startMatrix(boolean puedeMover[][]) {
+        for (int i = 0; i < nFilas; i++) {
+            for (int j = 0; j < nColumnas; j++) {
+                puedeMover[i][j] = !this.superficie.esVacia(i, j);
+            }
+        }
+    }
+	
+	
+    /**
+	 * guarda el tipo de juego, en este caso escribe en le fichero: simple
+	 * @param fw
+	 * @throws IOexception
+	 */
+	public void guardaTipoJuego(FileWriter fw) throws IOException {
+		fw.write("simple");
+		fw.write(System.getProperty("line.separator"));			
+	}
+	
+
+	
+	/**
+     * Creación una célula simple, en la posicion x,y
+     * @param x Coordenada x de la célula
+     * @param y Coordenada y de la célula
+	 * @throws PosicionOcupada 
+	 * @throws IndicesFueraDeRango 
+	 * @throws CelulaIncorrecta 
+     */
+	@Override
+	public void crearCelula(int x, int y, Scanner sc) throws IndicesFueraDeRango, PosicionOcupada{
+		if (x < nFilas && y < nColumnas) {
+	        if (superficie.esVacia(x, y)) { //CREACION de una celula SIMPLE en la posicion x,y en caso de haber introducido una coordena correcta dentro del tablero
+	        	this.superficie.nuevaCelula(x, y, new CelulaSimple());
+	        } else {	// casuística de que hayamos escogido unas coordenadas dentro del tablero erroreas
+				throw new PosicionOcupada("Se solicitó crear en posición ocupada Fil:" + x + " Col: "+ y);
+	        }
+	    }
+	    else {	//casuï¿½stica de que hayamos escogido unas coordenadas FUERA del tablero
+	    	throw new IndicesFueraDeRango("Rango incorrecto Fila: " + x + " Col: "+ y);	    }		
+	}
+	
+	 public String toString(){
+	        return this.superficie.toString();
+	    }
+
+	 /**
+	  * carga el tipo de juego de fichero, primero las posiciones de la celula
+	  * y a continuación, dependiendo de que tipo de celula sea u otra, llama a superficie
+	  * @param sc
+	  * @throws FormatoNumericoIncorrecto
+	 * @throws ErrorLecturaTipoCelula 
+	  */
+	@Override
+	public void cargarTipoJuego(Scanner sc) throws FormatoNumericoIncorrecto, ErrorLecturaTipoCelula {		
+		
+		// while (sc.hasNext()) {....}
+		
+		
+		boolean continuar = true;
+		do{
+			int x = 0;
+			try{
+				ErrorLecturaFichero.incrementaContLinea();
+				x = sc.nextInt();
+			}
+			catch (NoSuchElementException e) { // Se alcanzó final del fichero
+				continuar = false;
+				sc.close();				
+			}
+			
+			if (continuar){
+				int y = sc.nextInt();
+				String tipoCelula = sc.next();
+				if(tipoCelula.equals("simple")){
+					CelulaSimple celulaSimple = new CelulaSimple();
+					superficie.nuevaCelula(x, y, celulaSimple);
+					celulaSimple.cargar(sc);
+				}
+				else {
+					throw new ErrorLecturaTipoCelula("celula incorrecta" + System.getProperty("line.separator")+ ErrorLecturaFichero.errorLectura());
+				}
+			}
+		}while(continuar);
+	}
+}

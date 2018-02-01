@@ -1,0 +1,175 @@
+package juegoVida;
+
+import Celulas.Celula;
+import Celulas.CelulaCompleja;
+import Celulas.CelulaSimple;
+
+public class Superficie {
+    private Celula[][] celulas;
+    private int nFilas, nColumnas;
+
+    public Superficie(int nf, int nc) {
+    	this.nFilas = nf;
+    	this.nColumnas = nc;
+        this.celulas = new Celula[nFilas][nColumnas];
+
+        for (int i = 0; i < nf; i++) {
+            for (int j = 0; j < nc; j++) {
+                this.celulas[i][j] = null;
+            }
+        }
+    }
+
+	/**
+     * Mata una cÈlula dadas sus coordenadas por par·metro
+     * @param posx Coordenada x de la cÈlula
+     * @param posy Coordenada y de la cÈlula
+     */
+    public void killCell(int posx, int posy) {
+        this.celulas[posx][posy] = null;
+    }
+
+    /**
+     * Devuelve por booleano si la cÈlula existe o la posiciÛn est· vacÌa
+     * @param i Coordenada x de la cÈlula
+     * @param j Coordenada y de la cÈlula
+     * @return true si no existe la cÈlula, false si existe
+     */
+    public boolean esVacia(int i, int j) {
+        return this.celulas[i][j] == null;
+    }
+    
+    /**
+     * Introduce una cÈlula nueva en la matriz de cÈlulas
+     * @param fil Coordenada x de la cÈlula
+     * @param col Coordenada y de la cÈlula
+     * @param celula CÈlula a introducir
+     */
+    public void nuevaCelula(int fil, int col, Celula celula) {
+        this.celulas[fil][col] = celula;
+    }
+    
+    
+    /**
+     * Cuando se llega a esta funciÛn, ya est· comprobado que hay sitio para moverse y se le pasa por par·metro, esta funciÛn hace que la cÈlula se reproduzca
+     ** @param i Coordenada x de la cÈlula madre, que pasa a ser la coordenada de la cÈlula hija
+     * @param j Coordenada y de la cÈlula madre, que pasa a ser la coordenada de la cÈlula hija
+     * @param auxi Nueva coordenada x de la cÈlula madre una vez se ha reproducido
+     * @param auxj Nueva coordenada y de la cÈlula madre una vez se ha reproducido     
+     */
+    public void seReproduce(int i, int j, int auxi, int auxj) {
+        this.killCell(i, j);
+        this.nuevaCelula(i, j, new CelulaSimple());
+        this.nuevaCelula(auxi, auxj, new CelulaSimple());
+    }
+    
+
+    /**
+     * "Mueve" una cÈlula a una posiciÛn que ya se ha comprobado que est· vacÌa, creando una nueva cÈlula, pasando los pasos que dio la otra y matando la anterior
+     * @param fil Coordenada x de la nueva cÈlula
+     * @param col Coordenada y de la nueva cÈlula
+     * @param auxi Coordenada x de la antigua cÈlula
+     * @param auxj Coordenada y de la antigua cÈlula
+     */
+    public void seMueve(int fil, int col, int auxi, int auxj) {
+    	this.celulas[auxi][auxj] = this.celulas[fil][col]; // las dos casillas apuntan a la misma celula
+    	this.celulas[fil][col] = null; // la casilla antigua se desconecta de la celula
+    }
+    
+    /**
+     * Devuelve el valor comestible de una cÈlula
+     * @param fil posicion x de la cÈlula
+     * @param col posicion y de la cÈlula
+     */
+	public boolean esComestible(int fil, int col) {
+		return celulas[fil][col].esComestible();
+	}
+	
+	/**
+     * Dados unas posiciones nf y nc de una celula, se encarga de ver si dicha coordenada se encuentra acotada dentro de la superficie
+     * @param nf Coordenada x
+     * @param nc Coordenada y
+     * @return Devuelve un booleano true en caso de que dicha posicion este acotada, false si esta fuera de rango
+     */
+    public boolean correctos(int nf, int nc) {
+        boolean ok = true;
+        if (nf < 0 || nf >= nFilas || nc < 0 || nc >= nColumnas) {
+            ok = false;
+        }
+        return ok;
+    }
+    
+    /**
+     * Dados unas posiciones f y c de una celula, devuelve el valor de la casilla a donde ha e moverse
+     * @param f Coordenada x
+     * @param c Coordenada y
+     * @return Devuelve una casilla con las posiciones de la celula a donde debe o moverse, o null en caso contrario
+     */
+    public Casilla ejecutaMovimiento(int f, int c){ 
+    	return celulas[f][c].ejecutaMovimiento(f, c, this);
+    }
+    
+    /**
+     * Incrementa los pasos de reproduccion de una celSimple y compueba si ha llegado al maximo
+     * @param i Coordenada x
+     * @param j Coordenada y
+     * @return Devuelve true si se ha excedido, false en caso contrario
+     */
+    public boolean incrementaCompruebaPasosReproduccion(int i, int j){
+    	return ((CelulaSimple) celulas[i][j]).incrementaCompruebaPasosReproduccion();
+    	
+    }   
+    
+    /**
+     * Incrementa los pasos de reproduccion de una celSimple y compueba si ha llegado al maximo
+     * @param i Coordenada x
+     * @param j Coordenada y
+     * @return Devuelve true si se ha excedido, false en caso contrario
+     */
+    public boolean incrementaCompruebaNoMovimiento(int i, int j) {
+    	return ( (CelulaSimple) celulas[i][j]).incrementaCompruebaNoMovimiento();
+    }
+    
+    /**
+     * Incrementa los pasos de reproduccion de una celCompleja y compueba si ha llegado al maximo
+     * @param i Coordenada x
+     * @param j Coordenada y
+     * @return Devuelve true si se ha excedido, false en caso contrario
+     */
+    public boolean compruebaMaxComidas(int i, int j){    	
+    	return ((CelulaCompleja) celulas[i][j]).compruebaMaxComidos();
+    }
+    
+    public int getnFilas() {
+		return nFilas;
+	}
+
+	public int getnColumnas() {
+		return nColumnas;
+	}
+    
+    /**
+     * Crea y devuelve el string del tablero en s√≠, listo para mostrarlo por pantalla
+     */
+    @Override
+    public String toString() {
+        String salida = "";
+        salida += "\\  ";
+        for (int x = 0; x < nColumnas; x++){
+        	salida += x + "   ";
+        }
+        salida += System.getProperty("line.separator");
+        for (int i = 0; i < celulas.length; i++) { // i < FILAS
+            salida += i;
+            for (int j = 0; j < celulas[i].length; j++) { // j < 
+                if (esVacia(i, j)) {
+                    salida += "  - ";
+                } else {
+                    salida += " " + celulas[i][j].toString();
+                }
+            }
+            salida += System.getProperty("line.separator");
+        }
+        return salida;
+    }
+}

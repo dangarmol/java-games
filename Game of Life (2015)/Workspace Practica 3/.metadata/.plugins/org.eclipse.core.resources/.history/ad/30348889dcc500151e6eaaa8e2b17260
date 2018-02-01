@@ -1,0 +1,181 @@
+package mundos;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Scanner;
+
+import celulas.CelulaCompleja;
+import celulas.CelulaSimple;
+import juegoVida.Casilla;
+import juegoVida.Superficie;
+import excepciones.CelulaIncorrecta;
+import excepciones.ErrorLecturaFichero;
+import excepciones.ErrorLecturaTipoCelula;
+import excepciones.FormatoNumericoIncorrecto;
+import excepciones.IndicesFueraDeRango;
+import excepciones.PalabraIncorrecta;
+import excepciones.PosicionOcupada;
+import excepciones.PosicionVacia;
+
+public abstract class Mundo {
+	protected Superficie superficie;
+    protected int nFilas;
+	protected int nColumnas;
+	
+	public Mundo() {
+		this.nFilas = 0;
+		this.nColumnas = 0;
+		superficie = null;
+	}
+	
+	public Mundo(int f, int c) {
+		this.nFilas = f;
+		this.nColumnas = c;
+	    superficie = new Superficie(nFilas, nColumnas);	   
+	}	
+
+	/**
+	 * inicializa el mundo, con su superficie y sus corresponientes celulas
+	 */
+	public abstract void inicializaMundo();
+	
+	
+	public void evoluciona () {
+		boolean haMovido [][] = new boolean [nFilas][nColumnas];
+		Casilla casilla;
+		
+		for (int i = 0; i < nFilas; i++) {
+			for (int j = 0; j < nColumnas; j++) {
+				haMovido[i][j] = false;
+			}
+		}
+		for (int i = 0; i < nFilas; i++) {
+			for (int j = 0; j < nColumnas; j++) {
+				if ((!superficie.esVacia(i, j)) && (!haMovido[i][j])) {
+					casilla = superficie.ejecutaMovimiento(i, j);
+					if (casilla != null) {
+						haMovido[casilla.getFila()][casilla.getColumna()] = true;
+					}
+				}
+			}
+		}
+	}
+	
+	
+	/**
+	 * Elimina la correspondiente celula en la posicion x, y
+	 * @param x posicion fila
+	 * @param y posicion columna
+	 * @throws IndicesFueraDeRango
+	 * @throws PosicionVacia
+	 */
+	// MÉTODO ELIMINAR
+	public void eliminarCelula(int x, int y) throws IndicesFueraDeRango, PosicionVacia {
+		
+		if(x > nFilas || y > nColumnas){
+			throw new IndicesFueraDeRango("Rango incorrecto Fila: " + x + " Col: "+ y);
+		}
+		else if(superficie.esVacia(x, y)){
+			throw new PosicionVacia("Se solicitó eliminar posición vacía en Fil:" + x + " Col: "+ y);
+		}
+		else{
+			superficie.killCell(x, y);
+		}
+	}
+	
+	/**
+	 * vacía la superficie
+	 */
+	// COMANDO VACIAR	
+	public void vaciarMundo() {
+		superficie = new Superficie(nFilas, nColumnas);
+	}
+	
+	/**
+     * Creación una célula simple, en la posicion x,y
+     * @param x Coordenada x de la célula
+     * @param y Coordenada y de la célula
+	 * @throws PosicionOcupada 
+	 * @throws IndicesFueraDeRango 
+	 * @throws CelulaIncorrecta 
+     */
+	public abstract void crearCelula(int x, int y, Scanner sc) throws IndicesFueraDeRango, PosicionOcupada, CelulaIncorrecta;
+	
+	
+	
+	/**
+	 * delega en un mundo u otro dependiendo del tipo de partida
+	 * @param sc
+	 * @throws FormatoNumericoIncorrecto
+	 * @throws ErrorLecturaTipoCelula 
+	 */
+	public abstract void cargarTipoJuego(Scanner sc) throws FormatoNumericoIncorrecto, ErrorLecturaTipoCelula;
+	
+	/**
+	 * guarda una partida en un fichero con nombre fileName
+	 * @param fileName nombre del fichero
+	 * @throws IOException
+	 */
+	public void guardar(String fileName) throws IOException {
+		File file = new File(fileName);
+		FileWriter fw = null;
+		try {
+			fw = new FileWriter(file);
+			this.guardaTipoJuego(fw);
+			this.superficie.guardar(fw);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		finally{
+			try {
+				fw.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	/**
+	 * delega en un mundo u otro para guerdar la informacion acerca del tipo de juego
+	 * @param fw
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 */
+	public abstract void guardaTipoJuego(FileWriter fw) throws FileNotFoundException, IOException;
+
+    @Override    
+    public abstract String toString();
+
+
+    /**
+	 * carga el tipo de celula,
+	 * y es la encargada de delegar en el tipo de celula corrresponiente a la hora de cargar
+	 * @param sc flujo de escanner
+	 */
+    
+    /**
+	 * carga de fichero las dimensiones
+	 * @param sc flujo abierto
+	 * @throws PalabraIncorrecta
+	 * @throws FormatoNumericoIncorrecto
+	 * @throws ErrorLecturaTipoCelula 
+	 */
+	public void cargar(Scanner sc) throws PalabraIncorrecta, FormatoNumericoIncorrecto, ErrorLecturaTipoCelula {
+		
+		ErrorLecturaFichero.incrementaContLinea();
+		this.nFilas = sc.nextInt();
+		
+		ErrorLecturaFichero.incrementaContLinea();
+		this.nColumnas = sc.nextInt();
+		
+		this.superficie = new Superficie(this.nFilas, this.nColumnas);
+		
+		this.cargarTipoJuego(sc);
+	}
+	
+	
+
+}
+

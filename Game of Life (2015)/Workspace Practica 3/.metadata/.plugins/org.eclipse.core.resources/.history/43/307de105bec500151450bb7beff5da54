@@ -1,0 +1,7 @@
+package excepciones;
+
+public class ErrorLecturaTipoCelula extends Throwable {
+	public ErrorLecturaTipoCelula (String msg){
+		super(msg);
+	}
+}

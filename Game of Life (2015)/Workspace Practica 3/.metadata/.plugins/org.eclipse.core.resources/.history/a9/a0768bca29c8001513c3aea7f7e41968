@@ -1,0 +1,169 @@
+package mundos;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Scanner;
+
+import celulas.CelulaCompleja;
+import celulas.CelulaSimple;
+import excepciones.CelulaIncorrecta;
+import excepciones.ErrorLecturaFichero;
+import excepciones.ErrorLecturaTipoCelula;
+import excepciones.FormatoNumericoIncorrecto;
+import excepciones.IndicesFueraDeRango;
+import excepciones.PosicionOcupada;
+
+public class MundoComplejo extends Mundo{
+	
+	protected int nCelSimples; //nÃºmero de cÃ©lulas iniciales
+	protected int nCelComplejas; //nÃºmero de cÃ©lulas iniciales
+	
+	
+	/**
+	 * CONSTRUCTORA
+	 * @param f número de filas
+	 * @param c número de columnas
+	 * @param cs número de celulasSimples
+	 * @param cc número de celulasComplejas
+	 */
+	public MundoComplejo(int f, int c, int cs, int cc) {
+		super(f,c);
+		this.nCelSimples = cs;
+		this.nCelComplejas = cc;
+		inicializaMundo();
+	}
+	
+	/**
+	 * CONSTRUCTORA
+	 * @param f número de filas
+	 * @param c número de columnas
+	 */
+	public MundoComplejo(int f, int c){
+		super(f,c);
+	}
+	
+	public MundoComplejo(){
+		super();
+	}
+	
+	/**
+     * Método que ejecuta el comando INICIAR,
+     * creando una nueva supericie vacia, y creando X celulasSimples y X celulasComplejas en posiciones aleatorias
+     */
+	public void inicializaMundo() {
+		vaciarMundo();		//crea nueva superficie vacia
+        int fil;
+        int col;
+        int celulasColocadas = 0;
+        while (celulasColocadas < nCelSimples) { //coloca celulas simples enposiciones aleatorias
+            fil = (int) (Math.random() * nFilas);
+            col = (int) (Math.random() * nColumnas);
+
+            if (this.superficie.esVacia(fil, col)) {
+                this.superficie.nuevaCelula(fil, col, new CelulaSimple());
+                celulasColocadas++;
+            }
+        }
+        celulasColocadas = 0;
+        while (celulasColocadas < nCelComplejas) { //coloca celulas complejas enposiciones aleatorias
+            fil = (int) (Math.random() * nFilas);
+            col = (int) (Math.random() * nColumnas);
+            if (this.superficie.esVacia(fil, col)) {
+                this.superficie.nuevaCelula(fil, col, new CelulaCompleja());
+                celulasColocadas++;
+            }
+        }
+	}
+	
+	/**
+	 * Método que se encarga de evolucionar el mundo
+	 */
+	
+	
+	/**
+     * Creación una célula simple, en la posicion x,y, se le preguntara al usuario el tipo de celula a crear
+     * @param x Coordenada x de la célula
+     * @param y Coordenada y de la célula
+	 * @throws PosicionOcupada 
+	 * @throws IndicesFueraDeRango 
+	 * @throws CelulaIncorrecta 
+     */
+	@Override
+	public void crearCelula(int x, int y, Scanner teclado) throws PosicionOcupada, IndicesFueraDeRango, CelulaIncorrecta {
+		
+		if (x < nFilas && y < nColumnas) {
+			if (superficie.esVacia(x, y)) { //CREACION de una celula SIMPLE en la posicion x,y en caso de haber introducido una coordena correcta dentro del tablero
+			
+				System.out.println("¿Qué tipo de celula desea crear?"); // preguntamos al usuario el tipo de celula a crear
+				
+				String opcion = teclado.nextLine().toUpperCase();
+				
+				if(opcion.equals("SIMPLE")){	// SI ELIGE SIMPLE....
+					superficie.nuevaCelula(x, y, new CelulaSimple());
+				} else if(opcion.equals("COMPLEJA")){	// SI ELIGE COMPLEJA
+					superficie.nuevaCelula(x, y, new CelulaCompleja());				
+				}
+				else{
+					throw new CelulaIncorrecta("No existe dicho tipo de célula");
+				}
+			}
+			else {	//casuï¿½stica de que hayamos escogido unas coordenadas dentro del tablero erroreas
+				throw new PosicionOcupada("Se solicitó crear en posición ocupada Fil:" + x + " Col: "+ y);
+	        }
+	    }
+	    else {	//casuï¿½stica de que hayamos escogido unas coordenadas FUERA del tablero
+	    	throw new IndicesFueraDeRango("Rango incorrecto Fila: " + x + " Col: "+ y);			
+	    }		
+	}
+	
+	/**
+	 * guarda el tipo de juego, en este caso escribe en le fichero: complejo
+	 * @param fw
+	 * @throws IOexception
+	 */
+	public void guardaTipoJuego(FileWriter fw) throws IOException{
+		fw.write("complejo");
+		fw.write(System.getProperty("line.separator"));
+		
+	}
+
+	
+	 public String toString(){
+	        return this.superficie.toString();
+	    }
+
+	 
+	 /**
+	  * carga el tipo de juego de fichero, primero las posiciones de la celula
+	  * y a continuación, dependiendo de que tipo de celula sea u otra, llama a superficie
+	  * @param sc
+	  * @throws FormatoNumericoIncorrecto
+	 * @throws ErrorLecturaTipoCelula 
+	  */
+	@Override
+	public void cargarTipoJuego(Scanner sc) throws FormatoNumericoIncorrecto, ErrorLecturaTipoCelula {
+		
+		boolean continuar = true;
+		while (sc.hasNext()) {
+			ErrorLecturaFichero.incrementaContLinea();
+			int x = sc.nextInt();
+			int y = sc.nextInt();
+			String tipoCelula = sc.next();
+			if(tipoCelula.equals("simple")){
+				CelulaSimple celulaSimple = new CelulaSimple();
+				superficie.nuevaCelula(x, y, celulaSimple);
+				celulaSimple.cargar(sc);
+			}
+			else if (tipoCelula.equals("compleja")){
+				CelulaCompleja celulaCompleja = new CelulaCompleja();
+				superficie.nuevaCelula(x, y, celulaCompleja);
+				celulaCompleja.cargar(sc);
+			}
+			else {
+				throw new ErrorLecturaTipoCelula("celula incorrecta" + System.getProperty("line.separator")+ ErrorLecturaFichero.errorLectura());
+			}
+		}
+	}
+
+	
+}

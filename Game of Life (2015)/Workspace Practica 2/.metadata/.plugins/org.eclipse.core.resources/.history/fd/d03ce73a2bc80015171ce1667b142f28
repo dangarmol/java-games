@@ -1,0 +1,77 @@
+package Celulas;
+
+import juegoVida.Casilla;
+import juegoVida.Superficie;
+
+public class CelulaCompleja extends Celula {
+
+	private static final int MAX_COMER = 3;
+	
+	private int nComidas;
+	
+	public CelulaCompleja () {
+		super();
+		this.esComestible = false;
+		this.nComidas = 0;
+	}
+	
+	/**
+     * Calcula la casilla de destino.
+     * @param fil Coordenada x de donde se encuentra la celula
+     * @param col Coordenada y de donde se encuentra la celula
+     * @param superficie
+     * @return Devuelve una casilla de destino a la celula
+     */
+	@Override
+	public Casilla ejecutaMovimiento(int f, int c, Superficie superficie) {
+		int fil, col;
+		Casilla casilla = null;
+		
+		do{
+			fil = (int) (Math.random() * superficie.getnFilas());
+	        col = (int) (Math.random() * superficie.getnColumnas());			
+		}while(fil == f && col == c);		
+       
+    	if(!superficie.esVacia(fil, col)){
+    		if(superficie.esComestible(fil, col)){
+    			casilla = new Casilla(fil, col);
+        		this.incrementanComidas();        		
+    		}    		
+    	}else{
+    		casilla = new Casilla(fil, col);
+    	}    	
+		return casilla;
+	}
+	
+	
+	
+	private void incrementanComidas(){
+		this.nComidas++;
+	}
+	
+	public boolean compruebaMaxComidos(){
+		boolean max = false;
+		if (nComidas > MAX_COMER) {
+			max = true;
+		}
+		return max;
+	}
+	
+	
+	@Override
+	public boolean esComestible() {		
+		return esComestible;
+	}
+	 public int getComidas() {
+		 return this.nComidas;
+}
+	
+	/**
+     * Devuelve el String de cada Célula
+     */
+    @Override
+    public String toString() {
+        return " "+getComidas()+ " ";
+    }
+
+}

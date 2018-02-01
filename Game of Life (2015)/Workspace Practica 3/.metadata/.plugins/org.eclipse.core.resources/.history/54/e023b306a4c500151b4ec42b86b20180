@@ -1,0 +1,139 @@
+package juegoVida;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.NoSuchElementException;
+import java.util.Scanner;
+
+import juegoVida.Casilla;
+import juegoVida.Superficie;
+import excepciones.ErrorLecturaFichero;
+import excepciones.FormatoNumericoIncorrecto;
+
+public class CelulaCompleja implements Celula {
+
+	protected boolean esComestible;
+	
+	private static final int MAX_COMER = 3;
+	
+	private int nComidas;
+	
+	public CelulaCompleja () {
+		super();
+		this.esComestible = false;
+		this.nComidas = 0;
+	}
+	
+	/**
+     * Calcula la casilla de destino.
+     * @param fil Coordenada x de donde se encuentra la celula
+     * @param col Coordenada y de donde se encuentra la celula
+     * @param superficie
+     * @return Devuelve una casilla de destino a la celula
+     */
+	@Override
+	public Casilla ejecutaMovimiento(int f, int c, Superficie superficie) {
+		int fil, col;
+		Casilla casilla = null;
+		
+		do{
+			fil = (int) (Math.random() * superficie.getnFilas());
+	        col = (int) (Math.random() * superficie.getnColumnas());			
+		}while(fil == f && col == c);		
+       
+    	if(!superficie.esVacia(fil, col)){
+    		if(superficie.esComestible(fil, col)){
+    			casilla = new Casilla(fil, col);
+        		this.incrementanComidas();        		
+    		}    		
+    	}else{
+    		casilla = new Casilla(fil, col);
+    	}    	
+		return casilla;
+	}
+	
+	
+	
+	private void incrementanComidas(){
+		this.nComidas++;
+	}
+	
+	/**
+     * Incrementa los pasos de reproduccion de una celCompleja y compueba si ha llegado al maximo
+     * @param i Coordenada x
+     * @param j Coordenada y
+     * @return Devuelve true si se ha excedido, false en caso contrario
+     */
+	public boolean compruebaMaxComidos(){
+		boolean max = false;
+		if (nComidas >= MAX_COMER) {
+			max = true;
+		}
+		return max;
+	}
+	
+	
+	@Override
+	public boolean esComestible() {		
+		return esComestible;
+	}
+	public int getComidas() {
+		return this.nComidas;
+	}
+	
+	/**
+     * Devuelve el String de cada Célula
+     */
+    @Override
+    public String toString() {
+        return " "+getComidas()+ " ";
+    }
+
+	@Override
+	public boolean incrementaCompruebaNoMovimiento() {
+		return false;
+	}
+
+	@Override
+	public boolean incrementaCompruebaPasosReproduccion() {
+		return false;
+	}
+
+	@Override
+	public int getPasos() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int getNoMovimiento() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	/**
+	 * GUARDA los atributos de la celula
+	 * @param fw
+	 * @throws IOException
+	 */
+	public void guardar(FileWriter fw) throws IOException {
+		fw.write("compleja " + this.nComidas + System.getProperty("line.separator"));
+	}
+
+	/**
+	 * carga a la celula sus atributos
+	 * @param fw
+	 * @throws IOException
+	 */
+	@Override
+	public void cargar(Scanner sc) throws FormatoNumericoIncorrecto {
+		try {
+			this.nComidas = sc.nextInt();
+		}
+		catch (NoSuchElementException e){
+			sc.close();	
+			throw new FormatoNumericoIncorrecto("EXCEPCION: Se esperaba un número" + System.getProperty("line.separator")+ ErrorLecturaFichero.errorLectura());
+		}
+		
+	}
+}

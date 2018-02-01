@@ -1,0 +1,101 @@
+package Celulas;
+
+import juegoVida.Casilla;
+import juegoVida.GuiaEjecucion;
+import juegoVida.Superficie;
+
+public class CelulaCompleja extends Celula {
+
+	private static final int MAX_COMER = 3;
+	
+	private int nComidas;
+	
+	public CelulaCompleja () {
+		super();
+		this.esComestible = false;
+		this.nComidas = 0;
+	}
+	
+	/**
+     * Calcula la casilla de destino.
+     * @param fil Coordenada x de donde se encuentra la celula
+     * @param col Coordenada y de donde se encuentra la celula
+     * @param superficie
+     * @return Devuelve una casilla de destino a la celula
+     */
+	@Override
+	public Casilla ejecutaMovimiento(int f, int c, Superficie superficie) {
+		Casilla casilla;
+		casilla = obtenerCasilla(f, c, superficie);
+		if(casilla!=null){
+			if(this.compruebaMaxComidos()){ //True si explota por max comidas
+				superficie.killCell(f, c);	//Muere la celula por llevar X celulas comidas
+				superficie.killCell(casilla.getFila(), casilla.getColumna()); //Muere la celulaSimple donde la celulaCompleja se ha llenado
+				GuiaEjecucion.arrayEvoluciona.add("Celula Comleja en (" + f + "," + c + ") se mueve a (" + casilla.getFila() + "," + casilla.getColumna() + ") -- COME--");
+				GuiaEjecucion.arrayEvoluciona.add("Explota la Celula Compleja en (" + casilla.getFila() + "," + casilla.getColumna() + ")");                				
+			}
+			else{ //En caso de no explotar, se ocupa la celda a la que se va a mover                				
+				if(superficie.esVacia(casilla.getFila(), casilla.getColumna())){   //Si la celulaCompleja ocupa una casilla vacia... NO COME              		
+					GuiaEjecucion.arrayEvoluciona.add("Celula Compleja en (" + f + "," + c + ") se mueve a (" + casilla.getFila() + "," + casilla.getColumna() + ") -- NO COME--");
+				}
+				else{ //Si la celulaCompleja ocupa una casilla donde se encuentra una celulaSimple...  COME
+					GuiaEjecucion.arrayEvoluciona.add("Celula Compleja en (" + f + "," + c + ") se mueve a (" + casilla.getFila() + "," + casilla.getColumna() + ") -- COME--");
+				}
+				superficie.seMueve(f, c, casilla.getFila(), casilla.getColumna()); //se mueve de i,j hasta la posicion de destino
+			}
+		}
+		else{			
+			GuiaEjecucion.arrayEvoluciona.add("Celula Compleja en (" + f + "," + c + ") no se mueve ya que en la posicion elegida se encuentra una celula compleja");		
+		}
+		return casilla;
+	}
+	
+	private Casilla obtenerCasilla(int f, int c, Superficie superficie) {
+		int fil, col;
+		Casilla casilla = null;
+		
+		do{
+			fil = (int) (Math.random() * superficie.getnFilas());
+	        col = (int) (Math.random() * superficie.getnColumnas());			
+		}while(fil == f && col == c);		
+       
+    	if(!superficie.esVacia(fil, col)){
+    		if(superficie.esComestible(fil, col)){
+    			casilla = new Casilla(fil, col);
+        		this.incrementanComidas(); 		
+    		}
+    	} else {
+    		casilla = new Casilla(fil, col);
+    	}    	
+		return casilla;
+	}
+
+	private void incrementanComidas(){
+		this.nComidas++;
+	}
+	
+	public boolean compruebaMaxComidos(){
+		boolean max = false;
+		if (nComidas > MAX_COMER) {
+			max = true;
+		}
+		return max;
+	}
+	
+	@Override
+	public boolean esComestible() {		
+		return esComestible;
+	}
+	 public int getComidas() {
+		 return this.nComidas;
+}
+	
+	/**
+     * Devuelve el String de cada Célula
+     */
+    @Override
+    public String toString() {
+        return " "+getComidas()+ " ";
+    }
+
+}
